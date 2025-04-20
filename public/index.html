@@ -5,33 +5,57 @@
   <title>Mylz's Memory Game</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
+    :root {
+      --bg: #1c1c1c;
+      --text: #fff;
+      --card-front: #444;
+      --card-back: #fff;
+      --card-back-text: #000;
+    }
+
+    body.light {
+      --bg: #f2f2f2;
+      --text: #000;
+      --card-front: #ddd;
+      --card-back: #222;
+      --card-back-text: #fff;
+    }
+
+    * { box-sizing: border-box; }
     body {
       margin: 0;
       font-family: 'Segoe UI', sans-serif;
-      background: #1c1c1c;
-      color: #fff;
+      background: var(--bg);
+      color: var(--text);
       display: flex;
       flex-direction: column;
       align-items: center;
       padding: 2rem;
       min-height: 100vh;
-      user-select: none; /* prevents highlight */
+      user-select: none;
     }
 
     h1 {
       font-size: 2.2rem;
-      margin-bottom: 1rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .top-bar {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 2rem;
     }
 
     .score {
       color: #00e676;
-      margin-bottom: 1rem;
     }
 
     .buttons, .controls {
       display: flex;
       gap: 1rem;
-      margin-bottom: 1rem;
+      margin: 1rem 0;
     }
 
     .buttons button, .controls button {
@@ -85,29 +109,47 @@
     }
 
     .front {
-      background: #444;
+      background: var(--card-front);
     }
 
     .back {
-      background: #888;
+      background: var(--card-back);
       transform: rotateY(180deg);
-      color: white;
+      color: var(--card-back-text);
     }
 
     .slider {
       width: 150px;
     }
 
+    .toggle {
+      background: transparent;
+      border: 1px solid var(--text);
+      border-radius: 6px;
+      padding: 0.5rem;
+      cursor: pointer;
+    }
+
+    .timer {
+      font-weight: bold;
+      font-size: 1.2rem;
+    }
   </style>
 </head>
 <body>
+  <div class="top-bar">
+    <div class="score">Games Won: <span id="score">0</span></div>
+    <div class="timer" id="timer">Time: 00:00</div>
+  </div>
+
   <h1>Mylz's Memory Game</h1>
-  <div class="score">Games Won: <span id="score">0</span></div>
 
   <div class="buttons">
     <button id="easy">Easy</button>
     <button id="medium">Medium</button>
     <button id="hard">Hard</button>
+    <button id="toggle-theme" class="toggle">🌓 Theme</button>
+    <button id="emoji-mode" class="toggle">😺 Emoji</button>
   </div>
 
   <div class="controls">
@@ -130,16 +172,31 @@
       hard: [6, 6],
     };
 
-    function generateNumbers(totalPairs) {
-      const nums = [];
-      for (let i = 1; i <= totalPairs; i++) {
-        nums.push(i, i);
-      }
-      for (let i = nums.length - 1; i > 0; i--) {
+    const emojiList = ["🐶", "🐱", "🐭", "🦊", "🐻", "🐼", "🐨", "🐯", "🦁", "🐸", "🐙", "🐷"];
+
+    let isEmojiMode = false;
+    let theme = "dark";
+    let timerInterval;
+
+    function generateValues(totalPairs) {
+      const pool = isEmojiMode ? emojiList.slice(0, totalPairs) : Array.from({ length: totalPairs }, (_, i) => i + 1);
+      const fullSet = shuffle([...pool, ...pool]);
+      return fullSet.map((value, i) => ({ id: i, value }));
+    }
+
+    function shuffle(array) {
+      let i = array.length;
+      while (i--) {
         const j = Math.floor(Math.random() * (i + 1));
-        [nums[i], nums[j]] = [nums[j], nums[i]];
+        [array[i], array[j]] = [array[j], array[i]];
       }
-      return nums;
+      return array;
+    }
+
+    function formatTime(seconds) {
+      const m = String(Math.floor(seconds / 60)).padStart(2, '0');
+      const s = String(seconds % 60).padStart(2, '0');
+      return `${m}:${s}`;
     }
 
     function Game({ rows, cols, previewTime }) {
@@ -148,13 +205,22 @@
       const [flipped, setFlipped] = React.useState([]);
       const [matched, setMatched] = React.useState([]);
       const [lockBoard, setLockBoard] = React.useState(true);
+      const [time, setTime] = React.useState(0);
 
       React.useEffect(() => {
-        const numbers = generateNumbers(total / 2).map((value, i) => ({ id: i, value }));
-        setCards(numbers);
-        setFlipped(numbers.map((_, i) => i)); // Show all at start
+        const values = generateValues(total / 2);
+        setCards(values);
+        setFlipped(values.map((_, i) => i));
         setMatched([]);
         setLockBoard(true);
+        let timePassed = 0;
+        document.getElementById("timer").textContent = "Time: 00:00";
+
+        timerInterval = setInterval(() => {
+          timePassed++;
+          document.getElementById("timer").textContent = "Time: " + formatTime(timePassed);
+        }, 1000);
+
         setTimeout(() => {
           setFlipped([]);
           setLockBoard(false);
@@ -167,8 +233,10 @@
           const [a, b] = flipped;
           if (cards[a].value === cards[b].value) {
             setMatched((prev) => [...prev, cards[a].value]);
-            setFlipped([]);
-            setLockBoard(false);
+            setTimeout(() => {
+              setFlipped([]);
+              setLockBoard(false);
+            }, 400);
           } else {
             setTimeout(() => {
               setFlipped([]);
@@ -180,6 +248,7 @@
 
       React.useEffect(() => {
         if (matched.length === total / 2) {
+          clearInterval(timerInterval);
           const score = Number(localStorage.getItem("score") || 0) + 1;
           localStorage.setItem("score", score);
           document.getElementById("score").textContent = score;
@@ -223,8 +292,18 @@
       document.getElementById("medium").onclick = () => currentDifficulty = "medium";
       document.getElementById("hard").onclick = () => currentDifficulty = "hard";
       document.getElementById("start").onclick = () => renderGame();
+
       document.getElementById("previewTime").oninput = (e) => {
         document.getElementById("previewValue").textContent = e.target.value + "ms";
+      };
+
+      document.getElementById("toggle-theme").onclick = () => {
+        theme = theme === "dark" ? "light" : "dark";
+        document.body.classList.toggle("light");
+      };
+
+      document.getElementById("emoji-mode").onclick = () => {
+        isEmojiMode = !isEmojiMode;
       };
     }
 
@@ -235,6 +314,7 @@
 
     window.addEventListener("beforeunload", () => {
       localStorage.removeItem("score");
+      clearInterval(timerInterval);
     });
   </script>
 </body>
