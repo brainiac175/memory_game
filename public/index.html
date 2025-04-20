@@ -15,6 +15,7 @@
       align-items: center;
       padding: 2rem;
       min-height: 100vh;
+      user-select: none; /* prevents highlight */
     }
 
     h1 {
@@ -56,25 +57,47 @@
     .card {
       width: 80px;
       height: 80px;
-      background: #888;
+      perspective: 600px;
+    }
+
+    .inner {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transition: transform 0.6s;
+      transform-style: preserve-3d;
+    }
+
+    .flipped .inner {
+      transform: rotateY(180deg);
+    }
+
+    .front, .back {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 10px;
+      backface-visibility: hidden;
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 2rem;
-      color: white;
-      border-radius: 10px;
-      cursor: pointer;
     }
 
-    .hidden {
+    .front {
       background: #444;
-      color: transparent;
-      pointer-events: none;
+    }
+
+    .back {
+      background: #888;
+      transform: rotateY(180deg);
+      color: white;
     }
 
     .slider {
       width: 150px;
     }
+
   </style>
 </head>
 <body>
@@ -124,22 +147,34 @@
       const [cards, setCards] = React.useState([]);
       const [flipped, setFlipped] = React.useState([]);
       const [matched, setMatched] = React.useState([]);
-      const [locked, setLocked] = React.useState(true);
+      const [lockBoard, setLockBoard] = React.useState(true);
 
       React.useEffect(() => {
         const numbers = generateNumbers(total / 2).map((value, i) => ({ id: i, value }));
         setCards(numbers);
-        setFlipped(numbers.map((_, i) => i)); // show all briefly
-        setTimeout(() => setFlipped([]), previewTime);
+        setFlipped(numbers.map((_, i) => i)); // Show all at start
+        setMatched([]);
+        setLockBoard(true);
+        setTimeout(() => {
+          setFlipped([]);
+          setLockBoard(false);
+        }, previewTime);
       }, [rows, cols, previewTime]);
 
       React.useEffect(() => {
         if (flipped.length === 2) {
+          setLockBoard(true);
           const [a, b] = flipped;
           if (cards[a].value === cards[b].value) {
             setMatched((prev) => [...prev, cards[a].value]);
+            setFlipped([]);
+            setLockBoard(false);
+          } else {
+            setTimeout(() => {
+              setFlipped([]);
+              setLockBoard(false);
+            }, 800);
           }
-          setTimeout(() => setFlipped([]), 800);
         }
       }, [flipped]);
 
@@ -152,9 +187,8 @@
       }, [matched]);
 
       const handleClick = (i) => {
-        if (!flipped.includes(i) && flipped.length < 2 && !matched.includes(cards[i].value)) {
-          setFlipped([...flipped, i]);
-        }
+        if (lockBoard || flipped.includes(i) || matched.includes(cards[i].value)) return;
+        setFlipped((prev) => [...prev, i]);
       };
 
       return (
@@ -162,12 +196,11 @@
           {cards.map((card, i) => {
             const isFlipped = flipped.includes(i) || matched.includes(card.value);
             return (
-              <div
-                key={card.id}
-                className={"card " + (isFlipped ? "" : "hidden")}
-                onClick={() => handleClick(i)}
-              >
-                {card.value}
+              <div className="card" key={card.id} onClick={() => handleClick(i)}>
+                <div className={`inner ${isFlipped ? "flipped" : ""}`}>
+                  <div className="front"></div>
+                  <div className="back">{card.value}</div>
+                </div>
               </div>
             );
           })}
@@ -186,18 +219,10 @@
     }
 
     function setupControls() {
-      document.getElementById("easy").onclick = () => {
-        currentDifficulty = "easy";
-      };
-      document.getElementById("medium").onclick = () => {
-        currentDifficulty = "medium";
-      };
-      document.getElementById("hard").onclick = () => {
-        currentDifficulty = "hard";
-      };
-      document.getElementById("start").onclick = () => {
-        renderGame();
-      };
+      document.getElementById("easy").onclick = () => currentDifficulty = "easy";
+      document.getElementById("medium").onclick = () => currentDifficulty = "medium";
+      document.getElementById("hard").onclick = () => currentDifficulty = "hard";
+      document.getElementById("start").onclick = () => renderGame();
       document.getElementById("previewTime").oninput = (e) => {
         document.getElementById("previewValue").textContent = e.target.value + "ms";
       };
