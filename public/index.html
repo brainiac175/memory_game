@@ -118,9 +118,9 @@
   <h1>Mylz's Memory Game</h1>
   <div class="score">Games Won: <span id="score">0</span></div>
   <div class="buttons">
-    <button onclick="setGameSize(2)">Easy</button>
-    <button onclick="setGameSize(4)">Medium</button>
-    <button onclick="setGameSize(6)">Hard</button>
+    <button id="easy">Easy</button>
+    <button id="medium">Medium</button>
+    <button id="hard">Hard</button>
   </div>
   <div id="root"></div>
 
@@ -133,17 +133,13 @@
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-  <!-- Game Script -->
   <script type="text/babel">
     const imagesPool = [
-      "https://cdn.pixabay.com/photo/2016/11/22/23/45/cat-1852320_1280.jpg",
-      "https://cdn.pixabay.com/photo/2017/02/20/18/03/cat-2083492_1280.jpg",
-      "https://cdn.pixabay.com/photo/2016/02/10/16/37/bear-1199910_1280.jpg",
-      "https://cdn.pixabay.com/photo/2017/01/31/20/16/elephant-2021355_1280.jpg",
       "https://cdn.pixabay.com/photo/2020/03/27/12/23/panda-4974307_1280.jpg",
       "https://cdn.pixabay.com/photo/2020/12/29/19/10/tiger-5870089_1280.jpg",
       "https://cdn.pixabay.com/photo/2013/07/18/10/56/dog-164755_1280.jpg",
-      "https://cdn.pixabay.com/photo/2018/07/13/10/20/bird-3534979_1280.jpg",
+      "https://cdn.pixabay.com/photo/2017/01/31/20/16/elephant-2021355_1280.jpg",
+      "https://cdn.pixabay.com/photo/2016/11/22/23/45/cat-1852320_1280.jpg",
       "https://cdn.pixabay.com/photo/2018/03/28/12/35/fox-3269113_1280.jpg"
     ];
 
@@ -162,7 +158,6 @@
       const [flipped, setFlipped] = React.useState([]);
       const [matched, setMatched] = React.useState([]);
       const [won, setWon] = React.useState(false);
-
       const total = size * size;
 
       React.useEffect(() => {
@@ -207,11 +202,7 @@
           {cards.map((card, i) => {
             const isFlipped = flipped.includes(i) || matched.includes(card.src);
             return (
-              <div
-                key={card.id}
-                className={\`card \${isFlipped ? \"flipped\" : \"\"}\`}
-                onClick={() => handleClick(i)}
-              >
+              <div key={card.id} className={\`card \${isFlipped ? "flipped" : ""}\`} onClick={() => handleClick(i)}>
                 <div className="inner">
                   <div className="front"></div>
                   <div className="back"><img src={card.src} alt="card" /></div>
@@ -238,7 +229,11 @@
       renderGame(size);
     }
 
-    window.setGameSize = setGameSize;
+    window.onload = () => {
+      document.getElementById("easy").onclick = () => setGameSize(2);
+      document.getElementById("medium").onclick = () => setGameSize(4);
+      document.getElementById("hard").onclick = () => setGameSize(6);
+    };
 
     function initScore() {
       localStorage.setItem("score", 0);
