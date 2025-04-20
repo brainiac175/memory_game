@@ -5,71 +5,104 @@
   <title>Mylz's Memory Game</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
+    * {
+      box-sizing: border-box;
+    }
+
     body {
-      font-family: 'Segoe UI', sans-serif;
-      background: #f0f4f8;
       margin: 0;
-      padding: 2rem;
+      font-family: 'Segoe UI', sans-serif;
+      background: #222;
+      color: #fff;
       display: flex;
       flex-direction: column;
       align-items: center;
+      padding: 1.5rem;
       min-height: 100vh;
     }
 
     h1 {
-      font-size: 2.2rem;
+      font-size: 2.5rem;
       margin-bottom: 0.5rem;
     }
 
     .score {
-      font-size: 1.1rem;
+      font-size: 1.2rem;
       margin-bottom: 1rem;
-      color: #4caf50;
+      color: #00e676;
     }
 
     .buttons {
       display: flex;
       gap: 1rem;
-      margin-bottom: 2rem;
+      margin-bottom: 1.5rem;
     }
 
     .buttons button {
-      background: #e0e0e0;
+      background: #444;
       padding: 0.6rem 1.2rem;
       border-radius: 8px;
       border: none;
       font-weight: bold;
+      color: white;
       cursor: pointer;
       transition: background 0.2s;
     }
 
     .buttons button:hover {
-      background: #ccc;
+      background: #666;
     }
 
     .grid {
       display: grid;
       gap: 10px;
       justify-content: center;
+      margin-top: 1rem;
     }
 
     .card {
-      background: #ddd;
-      border-radius: 10px;
-      cursor: pointer;
-      overflow: hidden;
+      perspective: 1000px;
     }
 
-    .card img {
+    .inner {
+      width: 100px;
+      height: 100px;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.6s;
+    }
+
+    .card.flipped .inner {
+      transform: rotateY(180deg);
+    }
+
+    .front, .back {
+      width: 100px;
+      height: 100px;
+      position: absolute;
+      backface-visibility: hidden;
+      border-radius: 10px;
+    }
+
+    .front {
+      background: #999;
+    }
+
+    .back img {
       width: 100%;
       height: 100%;
       object-fit: cover;
+      border-radius: 10px;
+    }
+
+    .back {
+      transform: rotateY(180deg);
     }
 
     .win-message {
       font-weight: bold;
       margin-top: 1.5rem;
-      color: #388e3c;
+      color: #00e676;
     }
 
     .play-again {
@@ -93,15 +126,16 @@
   </div>
   <div id="root"></div>
 
-  <!-- Win Sound -->
+  <!-- Sound Effects -->
   <audio id="win-sound" src="https://assets.mixkit.co/sfx/preview/mixkit-game-level-completed-2059.mp3"></audio>
+  <audio id="bg-music" src="https://cdn.pixabay.com/audio/2023/05/04/audio_17e5397cf5.mp3" loop autoplay></audio>
 
   <!-- React + Babel -->
   <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-  <!-- Game Logic -->
+  <!-- Game Script -->
   <script type="text/babel">
     const imagesPool = [...Array(18)].map((_, i) => \`https://picsum.photos/id/\${1011 + i}/100\`);
 
@@ -138,7 +172,7 @@
           if (cards[a].src === cards[b].src) {
             setMatched((prev) => [...prev, cards[a].src]);
           }
-          setTimeout(() => setFlipped([]), 700);
+          setTimeout(() => setFlipped([]), 800);
         }
       }, [flipped]);
 
@@ -161,24 +195,24 @@
       }, [allMatched]);
 
       return (
-        <div>
-          <div className="grid" style={{ gridTemplateColumns: \`repeat(\${size}, 100px)\` }}>
-            {cards.map((card, i) => {
-              const isFlipped = flipped.includes(i) || matched.includes(card.src);
-              return (
-                <div key={card.id} className="card" style={{ width: 100, height: 100 }} onClick={() => handleClick(i)}>
-                  {isFlipped ? (
-                    <img src={card.src} alt="card" />
-                  ) : (
-                    <div style={{ height: "100%" }} />
-                  )}
+        <div className="grid" style={{ gridTemplateColumns: \`repeat(\${size}, 100px)\` }}>
+          {cards.map((card, i) => {
+            const isFlipped = flipped.includes(i) || matched.includes(card.src);
+            return (
+              <div
+                key={card.id}
+                className={\`card \${isFlipped ? \"flipped\" : \"\"}\`}
+                onClick={() => handleClick(i)}
+              >
+                <div className="inner">
+                  <div className="front"></div>
+                  <div className="back"><img src={card.src} alt="card" /></div>
                 </div>
-              );
-            })}
-          </div>
-
+              </div>
+            );
+          })}
           {allMatched && (
-            <div className="win-message">
+            <div className="win-message" style={{ gridColumn: \`span \${size}\` }}>
               🎉 You matched them all!
               <br />
               <button className="play-again" onClick={() => renderGame(size)}>Play Again</button>
@@ -206,7 +240,7 @@
     });
 
     initScore();
-    renderGame(2);
+    renderGame(2); // Load game immediately
   </script>
 </body>
 </html>
