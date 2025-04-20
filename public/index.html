@@ -5,8 +5,6 @@
   <title>Mylz's Memory Game</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    * { box-sizing: border-box; }
-
     body {
       margin: 0;
       font-family: 'Segoe UI', sans-serif;
@@ -15,39 +13,36 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 1.5rem;
+      padding: 2rem;
       min-height: 100vh;
     }
 
     h1 {
-      font-size: 2.5rem;
-      margin-bottom: 0.5rem;
+      font-size: 2.2rem;
+      margin-bottom: 1rem;
     }
 
     .score {
-      font-size: 1.2rem;
-      margin-bottom: 1rem;
       color: #00e676;
+      margin-bottom: 1rem;
     }
 
-    .buttons {
+    .buttons, .controls {
       display: flex;
       gap: 1rem;
-      margin-bottom: 1.5rem;
+      margin-bottom: 1rem;
     }
 
-    .buttons button {
-      background: #444;
+    .buttons button, .controls button {
       padding: 0.6rem 1.2rem;
-      border-radius: 8px;
-      border: none;
-      font-weight: bold;
+      background: #444;
       color: white;
+      border: none;
+      border-radius: 8px;
       cursor: pointer;
-      transition: background 0.2s;
     }
 
-    .buttons button:hover {
+    .buttons button:hover, .controls button:hover {
       background: #666;
     }
 
@@ -59,188 +54,163 @@
     }
 
     .card {
-      perspective: 1000px;
-    }
-
-    .inner {
-      width: 100px;
-      height: 100px;
-      position: relative;
-      transform-style: preserve-3d;
-      transition: transform 0.6s;
-    }
-
-    .card.flipped .inner {
-      transform: rotateY(180deg);
-    }
-
-    .front, .back {
-      width: 100px;
-      height: 100px;
-      position: absolute;
-      backface-visibility: hidden;
-      border-radius: 10px;
-    }
-
-    .front {
-      background: #999;
-    }
-
-    .back {
-      transform: rotateY(180deg);
-    }
-
-    .back img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      border-radius: 10px;
-    }
-
-    .win-message {
-      font-weight: bold;
-      margin-top: 1.5rem;
-      color: #00e676;
-    }
-
-    .play-again {
-      margin-top: 0.5rem;
-      padding: 0.5rem 1rem;
-      border: none;
-      background: #4caf50;
+      width: 80px;
+      height: 80px;
+      background: #888;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
       color: white;
-      border-radius: 6px;
+      border-radius: 10px;
       cursor: pointer;
+    }
+
+    .hidden {
+      background: #444;
+      color: transparent;
+      pointer-events: none;
+    }
+
+    .slider {
+      width: 150px;
     }
   </style>
 </head>
 <body>
   <h1>Mylz's Memory Game</h1>
   <div class="score">Games Won: <span id="score">0</span></div>
+
   <div class="buttons">
     <button id="easy">Easy</button>
     <button id="medium">Medium</button>
     <button id="hard">Hard</button>
   </div>
+
+  <div class="controls">
+    <label for="previewTime">Flip Duration:</label>
+    <input id="previewTime" class="slider" type="range" min="500" max="5000" step="100" value="1000" />
+    <span id="previewValue">1000ms</span>
+    <button id="start">Start</button>
+  </div>
+
   <div id="root"></div>
 
-  <!-- React + Babel -->
   <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
   <script type="text/babel">
-    const imagesPool = [
-      "https://cdn.pixabay.com/photo/2020/03/27/12/23/panda-4974307_1280.jpg",
-      "https://cdn.pixabay.com/photo/2020/12/29/19/10/tiger-5870089_1280.jpg",
-      "https://cdn.pixabay.com/photo/2013/07/18/10/56/dog-164755_1280.jpg",
-      "https://cdn.pixabay.com/photo/2017/01/31/20/16/elephant-2021355_1280.jpg",
-      "https://cdn.pixabay.com/photo/2016/11/22/23/45/cat-1852320_1280.jpg",
-      "https://cdn.pixabay.com/photo/2018/03/28/12/35/fox-3269113_1280.jpg"
-    ];
+    const difficulties = {
+      easy: [3, 4],
+      medium: [4, 4],
+      hard: [6, 6],
+    };
 
-    function shuffle(array) {
-      let currentIndex = array.length;
-      while (currentIndex !== 0) {
-        const randomIndex = Math.floor(Math.random() * currentIndex);
-        currentIndex--;
-        [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+    function generateNumbers(totalPairs) {
+      const nums = [];
+      for (let i = 1; i <= totalPairs; i++) {
+        nums.push(i, i);
       }
-      return array;
+      for (let i = nums.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [nums[i], nums[j]] = [nums[j], nums[i]];
+      }
+      return nums;
     }
 
-    function Game({ size }) {
+    function Game({ rows, cols, previewTime }) {
+      const total = rows * cols;
       const [cards, setCards] = React.useState([]);
       const [flipped, setFlipped] = React.useState([]);
       const [matched, setMatched] = React.useState([]);
-      const [won, setWon] = React.useState(false);
-      const total = size * size;
+      const [locked, setLocked] = React.useState(true);
 
       React.useEffect(() => {
-        const selected = shuffle(imagesPool).slice(0, total / 2);
-        const deck = shuffle([...selected, ...selected]).map((src, i) => ({ src, id: i }));
-        setCards(deck);
-        setFlipped([]);
-        setMatched([]);
-        setWon(false);
-      }, [size]);
+        const numbers = generateNumbers(total / 2).map((value, i) => ({ id: i, value }));
+        setCards(numbers);
+        setFlipped(numbers.map((_, i) => i)); // show all briefly
+        setTimeout(() => setFlipped([]), previewTime);
+      }, [rows, cols, previewTime]);
 
       React.useEffect(() => {
         if (flipped.length === 2) {
           const [a, b] = flipped;
-          if (cards[a].src === cards[b].src) {
-            setMatched((prev) => [...prev, cards[a].src]);
+          if (cards[a].value === cards[b].value) {
+            setMatched((prev) => [...prev, cards[a].value]);
           }
           setTimeout(() => setFlipped([]), 800);
         }
       }, [flipped]);
 
+      React.useEffect(() => {
+        if (matched.length === total / 2) {
+          const score = Number(localStorage.getItem("score") || 0) + 1;
+          localStorage.setItem("score", score);
+          document.getElementById("score").textContent = score;
+        }
+      }, [matched]);
+
       const handleClick = (i) => {
-        if (!flipped.includes(i) && flipped.length < 2 && !matched.includes(cards[i].src)) {
+        if (!flipped.includes(i) && flipped.length < 2 && !matched.includes(cards[i].value)) {
           setFlipped([...flipped, i]);
         }
       };
 
-      const allMatched = matched.length === total / 2;
-
-      React.useEffect(() => {
-        if (allMatched && !won) {
-          setWon(true);
-          const score = Number(localStorage.getItem('score') || 0) + 1;
-          localStorage.setItem('score', score);
-          document.getElementById('score').textContent = score;
-        }
-      }, [allMatched]);
-
       return (
-        <div className="grid" style={{ gridTemplateColumns: "repeat(" + size + ", 100px)" }}>
+        <div className="grid" style={{ gridTemplateColumns: `repeat(${cols}, 80px)` }}>
           {cards.map((card, i) => {
-            const isFlipped = flipped.includes(i) || matched.includes(card.src);
+            const isFlipped = flipped.includes(i) || matched.includes(card.value);
             return (
-              <div key={card.id} className={"card " + (isFlipped ? "flipped" : "")} onClick={() => handleClick(i)}>
-                <div className="inner">
-                  <div className="front"></div>
-                  <div className="back"><img src={card.src} alt="card" /></div>
-                </div>
+              <div
+                key={card.id}
+                className={"card " + (isFlipped ? "" : "hidden")}
+                onClick={() => handleClick(i)}
+              >
+                {card.value}
               </div>
             );
           })}
-          {allMatched && (
-            <div className="win-message" style={{ gridColumn: "span " + size }}>
-              🎉 You matched them all!
-              <br />
-              <button className="play-again" onClick={() => renderGame(size)}>Play Again</button>
-            </div>
-          )}
         </div>
       );
     }
 
-    function renderGame(size) {
-      ReactDOM.createRoot(document.getElementById("root")).render(<Game size={size} />);
+    let currentDifficulty = "easy";
+
+    function renderGame() {
+      const [rows, cols] = difficulties[currentDifficulty];
+      const previewTime = parseInt(document.getElementById("previewTime").value);
+      ReactDOM.createRoot(document.getElementById("root")).render(
+        <Game rows={rows} cols={cols} previewTime={previewTime} />
+      );
     }
 
-    function setGameSize(size) {
-      renderGame(size);
+    function setupControls() {
+      document.getElementById("easy").onclick = () => {
+        currentDifficulty = "easy";
+      };
+      document.getElementById("medium").onclick = () => {
+        currentDifficulty = "medium";
+      };
+      document.getElementById("hard").onclick = () => {
+        currentDifficulty = "hard";
+      };
+      document.getElementById("start").onclick = () => {
+        renderGame();
+      };
+      document.getElementById("previewTime").oninput = (e) => {
+        document.getElementById("previewValue").textContent = e.target.value + "ms";
+      };
     }
 
     window.onload = () => {
-      document.getElementById("easy").onclick = () => setGameSize(2);
-      document.getElementById("medium").onclick = () => setGameSize(4);
-      document.getElementById("hard").onclick = () => setGameSize(6);
-    };
-
-    function initScore() {
+      setupControls();
       localStorage.setItem("score", 0);
-      document.getElementById("score").textContent = 0;
-    }
+    };
 
     window.addEventListener("beforeunload", () => {
       localStorage.removeItem("score");
     });
-
-    initScore();
-    renderGame(2);
   </script>
 </body>
 </html>
