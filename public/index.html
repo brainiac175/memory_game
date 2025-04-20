@@ -133,12 +133,12 @@
       top: 0; left: 0;
       width: 100vw;
       height: 100vh;
-      background: rgba(255, 255, 255, 0.95);
+      background: rgba(30, 30, 30, 0.8);
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 3rem;
-      color: #111;
+      color: #fff;
       z-index: 999;
       animation: fadeOut 2s forwards 1s;
     }
@@ -158,6 +158,9 @@
   <h1>Mylz's Memory Game</h1>
 
   <div id="app"></div>
+
+  <!-- Confetti library -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
   <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
@@ -238,10 +241,12 @@
             startTrigger={startTrigger}
             onWin={() => {
               setShowWinAnim(true);
+              confetti({ particleCount: 200, spread: 90, origin: { y: 0.6 } });
               setTimeout(() => {
                 const newScore = score + 1;
                 setScore(newScore);
                 localStorage.setItem("score", newScore);
+                document.getElementById("score").textContent = newScore;
                 setShowWinAnim(false);
               }, 2500);
             }}
