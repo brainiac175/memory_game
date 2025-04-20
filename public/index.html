@@ -18,7 +18,13 @@
 
     h1 {
       font-size: 2.2rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .score {
+      font-size: 1.1rem;
       margin-bottom: 1rem;
+      color: #4caf50;
     }
 
     .buttons {
@@ -79,12 +85,16 @@
 </head>
 <body>
   <h1>Mylz's Memory Game</h1>
+  <div class="score">Games Won: <span id="score">0</span></div>
   <div class="buttons">
     <button onclick="setGameSize(2)">Easy</button>
     <button onclick="setGameSize(4)">Medium</button>
     <button onclick="setGameSize(6)">Hard</button>
   </div>
   <div id="root"></div>
+
+  <!-- Win Sound -->
+  <audio id="win-sound" src="https://assets.mixkit.co/sfx/preview/mixkit-game-level-completed-2059.mp3"></audio>
 
   <!-- React + Babel -->
   <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
@@ -109,6 +119,7 @@
       const [cards, setCards] = React.useState([]);
       const [flipped, setFlipped] = React.useState([]);
       const [matched, setMatched] = React.useState([]);
+      const [won, setWon] = React.useState(false);
 
       const total = size * size;
 
@@ -118,6 +129,7 @@
         setCards(deck);
         setFlipped([]);
         setMatched([]);
+        setWon(false);
       }, [size]);
 
       React.useEffect(() => {
@@ -138,6 +150,16 @@
 
       const allMatched = matched.length === total / 2;
 
+      React.useEffect(() => {
+        if (allMatched && !won) {
+          setWon(true);
+          document.getElementById('win-sound').play();
+          const score = Number(localStorage.getItem('score') || 0) + 1;
+          localStorage.setItem('score', score);
+          document.getElementById('score').textContent = score;
+        }
+      }, [allMatched]);
+
       return (
         <div>
           <div className="grid" style={{ gridTemplateColumns: \`repeat(\${size}, 100px)\` }}>
@@ -148,7 +170,7 @@
                   {isFlipped ? (
                     <img src={card.src} alt="card" />
                   ) : (
-                    <div style={{ height: \"100%\" }} />
+                    <div style={{ height: "100%" }} />
                   )}
                 </div>
               );
@@ -167,14 +189,23 @@
     }
 
     function renderGame(size) {
-      ReactDOM.createRoot(document.getElementById(\"root\")).render(<Game size={size} />);
+      ReactDOM.createRoot(document.getElementById("root")).render(<Game size={size} />);
     }
 
     function setGameSize(size) {
       renderGame(size);
     }
 
-    // Initial game render
+    function initScore() {
+      localStorage.setItem("score", 0);
+      document.getElementById("score").textContent = 0;
+    }
+
+    window.addEventListener("beforeunload", () => {
+      localStorage.removeItem("score");
+    });
+
+    initScore();
     renderGame(2);
   </script>
 </body>
