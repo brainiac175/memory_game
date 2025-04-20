@@ -77,11 +77,15 @@
       gap: 10px;
       justify-content: center;
       margin-top: 1rem;
+      width: 100%;
+      max-width: 100%;
+      padding: 0 1rem;
     }
 
     .card {
-      width: 80px;
-      height: 80px;
+      width: 100%;
+      aspect-ratio: 1;
+      max-width: 80px;
       perspective: 600px;
     }
 
@@ -147,6 +151,16 @@
       0% { opacity: 1; }
       100% { opacity: 0; visibility: hidden; }
     }
+
+    @media (max-width: 600px) {
+      .card {
+        max-width: 50px;
+      }
+
+      .front, .back {
+        font-size: 1.2rem;
+      }
+    }
   </style>
 </head>
 <body>
@@ -159,9 +173,8 @@
 
   <div id="app"></div>
 
-  <!-- Confetti library -->
+  <!-- Confetti -->
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-
   <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -339,7 +352,7 @@
       };
 
       return (
-        <div className="grid" style={{ gridTemplateColumns: `repeat(${cols}, 80px)` }}>
+        <div className="grid" style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}>
           {cards.map((card, i) => {
             const isFlipped = flipped.includes(i) || matched.includes(i);
             return (
