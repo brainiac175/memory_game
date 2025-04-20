@@ -82,21 +82,9 @@
       padding: 0 1rem;
     }
 
-    .grid-fixed .card {
-      max-width: 80px;
-    }
-
-    .grid-responsive .card {
-      max-width: 100%;
-    }
-
-    .grid-large .card {
-      max-width: 110px !important;
-    }
-
     .card {
-      width: 100%;
-      aspect-ratio: 1;
+      width: var(--card-size, 80px);
+      height: var(--card-size, 80px);
       perspective: 600px;
     }
 
@@ -162,20 +150,6 @@
       0% { opacity: 1; }
       100% { opacity: 0; visibility: hidden; }
     }
-
-    @media (max-width: 600px) {
-      .grid-fixed .card {
-        max-width: 60px;
-      }
-
-      .grid-large .card {
-        max-width: 70px !important;
-      }
-
-      .front, .back {
-        font-size: 1.2rem;
-      }
-    }
   </style>
 </head>
 <body>
@@ -202,7 +176,7 @@
       hard: [6, 6]
     };
 
-    const EMOJIS = ["🐶", "🐱", "🐭", "🦊", "🐻", "🐼", "🐨", "🐯", "🦁", "🐸", "🐙", "🐷"];
+    const EMOJIS = ["🧑‍🦼‍➡️", "🧙‍♂️", "🧟‍♂️", "🐍", "🫦", "🧜‍♀️", "🦕", "💁‍♀️", "🐠", "💪"];
 
     const shuffle = (arr) => {
       let i = arr.length;
@@ -226,11 +200,12 @@
       const [startTrigger, setStartTrigger] = useState(0);
       const [score, setScore] = useState(() => Number(localStorage.getItem("score") || 0));
       const [showWinAnim, setShowWinAnim] = useState(false);
-      const [largeCards, setLargeCards] = useState(false);
+      const [cardSize, setCardSize] = useState(80);
 
       useEffect(() => {
         document.body.classList.toggle("light", theme === "light");
-      }, [theme]);
+        document.documentElement.style.setProperty('--card-size', `${cardSize}px`);
+      }, [theme, cardSize]);
 
       return (
         <>
@@ -242,7 +217,6 @@
             ))}
             <button onClick={() => setTheme((prev) => (prev === "dark" ? "light" : "dark"))}>🌓 Theme</button>
             <button onClick={() => setEmojiMode((prev) => !prev)}>😺 Emoji</button>
-            <button onClick={() => setLargeCards(prev => !prev)}>🔍 Toggle Size</button>
           </div>
 
           <div className="controls">
@@ -258,6 +232,20 @@
               onChange={(e) => setPreviewTime(parseInt(e.target.value))}
             />
             <span>{previewTime}ms</span>
+
+            <label htmlFor="cardSize">Card Size:</label>
+            <input
+              id="cardSize"
+              className="slider"
+              type="range"
+              min="50"
+              max="120"
+              step="2"
+              value={cardSize}
+              onChange={(e) => setCardSize(parseInt(e.target.value))}
+            />
+            <span>{cardSize}px</span>
+
             <button onClick={() => setStartTrigger((x) => x + 1)}>Start</button>
           </div>
 
@@ -266,7 +254,6 @@
             emojiMode={emojiMode}
             previewTime={previewTime}
             startTrigger={startTrigger}
-            largeCards={largeCards}
             onWin={() => {
               setShowWinAnim(true);
               confetti({ particleCount: 200, spread: 90, origin: { y: 0.6 } });
@@ -289,7 +276,7 @@
       );
     }
 
-    function Game({ difficulty, emojiMode, previewTime, startTrigger, largeCards, onWin }) {
+    function Game({ difficulty, emojiMode, previewTime, startTrigger, onWin }) {
       const [cards, setCards] = useState([]);
       const [flipped, setFlipped] = useState([]);
       const [matched, setMatched] = useState([]);
@@ -368,8 +355,8 @@
 
       return (
         <div
-          className={`grid ${difficulty === 'hard' ? 'grid-responsive' : 'grid-fixed'} ${largeCards ? 'grid-large' : ''}`}
-          style={{ gridTemplateColumns: `repeat(${cols}, ${difficulty === 'hard' ? '1fr' : '80px'})` }}
+          className="grid"
+          style={{ gridTemplateColumns: `repeat(${cols}, var(--card-size, 80px))` }}
         >
           {cards.map((card, i) => {
             const isFlipped = flipped.includes(i) || matched.includes(i);
