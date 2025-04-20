@@ -241,7 +241,7 @@
         const pool = emojiMode ? EMOJIS.slice(0, total / 2) : Array.from({ length: total / 2 }, (_, i) => i + 1);
         const full = shuffle([...pool, ...pool]).map((val, i) => ({ id: i, value: val }));
         setCards(full);
-        setFlipped(full.map((_, i) => i)); // preview all
+        setFlipped(full.map((_, i) => i)); // show preview
         setMatched([]);
         setLock(true);
         setWon(false);
@@ -250,7 +250,7 @@
 
         const timeout = setTimeout(() => {
           setFlipped([]);
-          setLock(false);
+          setLock(false); // 💡 allow clicks now!
           setTimerRunning(true);
         }, previewTime);
 
