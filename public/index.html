@@ -127,6 +127,26 @@
       font-weight: bold;
       font-size: 1.2rem;
     }
+
+    .win-overlay {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(255, 255, 255, 0.95);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3rem;
+      color: #111;
+      z-index: 999;
+      animation: fadeOut 2s forwards 1s;
+    }
+
+    @keyframes fadeOut {
+      0% { opacity: 1; }
+      100% { opacity: 0; visibility: hidden; }
+    }
   </style>
 </head>
 <body>
@@ -175,6 +195,7 @@
       const [previewTime, setPreviewTime] = useState(1000);
       const [startTrigger, setStartTrigger] = useState(0);
       const [score, setScore] = useState(() => Number(localStorage.getItem("score") || 0));
+      const [showWinAnim, setShowWinAnim] = useState(false);
 
       useEffect(() => {
         document.body.classList.toggle("light", theme === "light");
@@ -216,11 +237,21 @@
             previewTime={previewTime}
             startTrigger={startTrigger}
             onWin={() => {
-              const newScore = score + 1;
-              setScore(newScore);
-              localStorage.setItem("score", newScore);
+              setShowWinAnim(true);
+              setTimeout(() => {
+                const newScore = score + 1;
+                setScore(newScore);
+                localStorage.setItem("score", newScore);
+                setShowWinAnim(false);
+              }, 2500);
             }}
           />
+
+          {showWinAnim && (
+            <div className="win-overlay">
+              🎉 YOU WON! 🎉
+            </div>
+          )}
         </>
       );
     }
