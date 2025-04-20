@@ -157,105 +157,130 @@
     const DIFFICULTIES = {
       easy: [3, 4],
       medium: [4, 4],
-      hard: [6, 6],
+      hard: [6, 6]
     };
 
     const EMOJIS = ["🐶", "🐱", "🐭", "🦊", "🐻", "🐼", "🐨", "🐯", "🦁", "🐸", "🐙", "🐷"];
 
-    function shuffle(array) {
-      let i = array.length;
+    const shuffle = (arr) => {
+      let i = arr.length;
       while (i--) {
         const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
+        [arr[i], arr[j]] = [arr[j], arr[i]];
       }
-      return array;
-    }
+      return arr;
+    };
 
-    function formatTime(seconds) {
-      const m = String(Math.floor(seconds / 60)).padStart(2, '0');
-      const s = String(seconds % 60).padStart(2, '0');
-      return `${m}:${s}`;
-    }
+    const formatTime = (s) => {
+      const m = String(Math.floor(s / 60)).padStart(2, "0");
+      return `${m}:${String(s % 60).padStart(2, "0")}`;
+    };
 
     function App() {
       const [difficulty, setDifficulty] = useState("easy");
       const [emojiMode, setEmojiMode] = useState(false);
       const [theme, setTheme] = useState("dark");
       const [previewTime, setPreviewTime] = useState(1000);
-      const [startGame, setStartGame] = useState(0);
-      const [timer, setTimer] = useState(0);
+      const [startTrigger, setStartTrigger] = useState(0);
 
       useEffect(() => {
         document.body.classList.toggle("light", theme === "light");
       }, [theme]);
 
-      useEffect(() => {
-        const interval = setInterval(() => {
-          setTimer((prev) => prev + 1);
-        }, 1000);
-        return () => clearInterval(interval);
-      }, [startGame]);
-
-      useEffect(() => {
-        document.getElementById("timer").textContent = "Time: " + formatTime(timer);
-      }, [timer]);
-
       return (
         <>
           <div className="buttons">
             {Object.keys(DIFFICULTIES).map((level) => (
-              <button key={level} onClick={() => {
-                setDifficulty(level);
-                setStartGame((n) => n + 1);
-                setTimer(0);
-              }}>
+              <button key={level} onClick={() => setDifficulty(level)}>
                 {level.charAt(0).toUpperCase() + level.slice(1)}
               </button>
             ))}
-            <button onClick={() => {
-              setTheme((prev) => prev === "dark" ? "light" : "dark");
-            }}>🌓 Theme</button>
-            <button onClick={() => {
-              setEmojiMode((prev) => !prev);
-              setStartGame((n) => n + 1);
-              setTimer(0);
-            }}>😺 Emoji</button>
+            <button onClick={() => setTheme((prev) => (prev === "dark" ? "light" : "dark"))}>
+              🌓 Theme
+            </button>
+            <button onClick={() => setEmojiMode((prev) => !prev)}>😺 Emoji</button>
           </div>
 
           <div className="controls">
             <label htmlFor="preview">Flip Duration:</label>
-            <input id="preview" className="slider" type="range" min="500" max="5000" step="100"
-              value={previewTime} onChange={(e) => setPreviewTime(parseInt(e.target.value))} />
+            <input
+              id="preview"
+              className="slider"
+              type="range"
+              min="500"
+              max="5000"
+              step="100"
+              value={previewTime}
+              onChange={(e) => setPreviewTime(parseInt(e.target.value))}
+            />
             <span>{previewTime}ms</span>
-            <button onClick={() => setStartGame((n) => n + 1)}>Start</button>
+            <button onClick={() => setStartTrigger((x) => x + 1)}>Start</button>
           </div>
 
-          <Game key={startGame} difficulty={difficulty} emojiMode={emojiMode} previewTime={previewTime} />
+          <Game
+            difficulty={difficulty}
+            emojiMode={emojiMode}
+            previewTime={previewTime}
+            startTrigger={startTrigger}
+          />
         </>
       );
     }
 
-    function Game({ difficulty, emojiMode, previewTime }) {
+    function Game({ difficulty, emojiMode, previewTime, startTrigger }) {
       const [cards, setCards] = useState([]);
       const [flipped, setFlipped] = useState([]);
       const [matched, setMatched] = useState([]);
       const [lock, setLock] = useState(true);
+      const [won, setWon] = useState(false);
+      const [time, setTime] = useState(0);
+      const [timerRunning, setTimerRunning] = useState(false);
 
       const [rows, cols] = DIFFICULTIES[difficulty];
 
       useEffect(() => {
         const total = rows * cols;
         const pool = emojiMode ? EMOJIS.slice(0, total / 2) : Array.from({ length: total / 2 }, (_, i) => i + 1);
-        const fullDeck = shuffle([...pool, ...pool]).map((value, i) => ({ id: i, value }));
-        setCards(fullDeck);
-        setFlipped(fullDeck.map((_, i) => i)); // show all
+        const full = shuffle([...pool, ...pool]).map((val, i) => ({ id: i, value: val }));
+        setCards(full);
+        setFlipped(full.map((_, i) => i)); // preview all
         setMatched([]);
         setLock(true);
-        setTimeout(() => {
+        setWon(false);
+        setTime(0);
+        setTimerRunning(false);
+
+        const timeout = setTimeout(() => {
           setFlipped([]);
           setLock(false);
+          setTimerRunning(true);
         }, previewTime);
-      }, [difficulty, emojiMode, previewTime]);
+
+        return () => clearTimeout(timeout);
+      }, [difficulty, emojiMode, previewTime, startTrigger]);
+
+      useEffect(() => {
+        if (timerRunning) {
+          const interval = setInterval(() => {
+            setTime((t) => t + 1);
+          }, 1000);
+          return () => clearInterval(interval);
+        }
+      }, [timerRunning]);
+
+      useEffect(() => {
+        document.getElementById("timer").textContent = "Time: " + formatTime(time);
+      }, [time]);
+
+      useEffect(() => {
+        if (matched.length === cards.length / 2 && !won) {
+          setWon(true);
+          setTimerRunning(false);
+          const score = Number(localStorage.getItem("score") || 0) + 1;
+          localStorage.setItem("score", score);
+          document.getElementById("score").textContent = score;
+        }
+      }, [matched]);
 
       useEffect(() => {
         if (flipped.length === 2) {
@@ -276,17 +301,9 @@
         }
       }, [flipped]);
 
-      useEffect(() => {
-        if (matched.length === cards.length / 2) {
-          const score = Number(localStorage.getItem("score") || 0) + 1;
-          localStorage.setItem("score", score);
-          document.getElementById("score").textContent = score;
-        }
-      }, [matched]);
-
       const handleClick = (i) => {
-        if (lock || flipped.includes(i) || matched.includes(cards[i].value)) return;
-        setFlipped([...flipped, i]);
+        if (lock || flipped.includes(i)) return;
+        setFlipped((prev) => [...prev, i]);
       };
 
       return (
