@@ -124,10 +124,6 @@
   </div>
   <div id="root"></div>
 
-  <!-- Sound Effects -->
-  <audio id="win-sound" src="https://assets.mixkit.co/sfx/preview/mixkit-game-level-completed-2059.mp3"></audio>
-  <audio id="bg-music" src="https://cdn.pixabay.com/audio/2022/10/24/audio_d9b25c3ea0.mp3" loop autoplay></audio>
-
   <!-- React + Babel -->
   <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
@@ -190,7 +186,6 @@
       React.useEffect(() => {
         if (allMatched && !won) {
           setWon(true);
-          document.getElementById('win-sound').play();
           const score = Number(localStorage.getItem('score') || 0) + 1;
           localStorage.setItem('score', score);
           document.getElementById('score').textContent = score;
@@ -198,11 +193,11 @@
       }, [allMatched]);
 
       return (
-        <div className="grid" style={{ gridTemplateColumns: \`repeat(\${size}, 100px)\` }}>
+        <div className="grid" style={{ gridTemplateColumns: "repeat(" + size + ", 100px)" }}>
           {cards.map((card, i) => {
             const isFlipped = flipped.includes(i) || matched.includes(card.src);
             return (
-              <div key={card.id} className={\`card \${isFlipped ? "flipped" : ""}\`} onClick={() => handleClick(i)}>
+              <div key={card.id} className={"card " + (isFlipped ? "flipped" : "")} onClick={() => handleClick(i)}>
                 <div className="inner">
                   <div className="front"></div>
                   <div className="back"><img src={card.src} alt="card" /></div>
@@ -211,7 +206,7 @@
             );
           })}
           {allMatched && (
-            <div className="win-message" style={{ gridColumn: \`span \${size}\` }}>
+            <div className="win-message" style={{ gridColumn: "span " + size }}>
               🎉 You matched them all!
               <br />
               <button className="play-again" onClick={() => renderGame(size)}>Play Again</button>
