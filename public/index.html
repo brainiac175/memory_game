@@ -11,6 +11,7 @@
       --card-front: #444;
       --card-back: #fff;
       --card-back-text: #000;
+      --card-size: 80px;
     }
 
     body.light {
@@ -57,6 +58,7 @@
       gap: 1rem;
       margin: 1rem 0;
       flex-wrap: wrap;
+      justify-content: center;
     }
 
     .buttons button, .controls button {
@@ -72,6 +74,12 @@
       background: #666;
     }
 
+    .game-container {
+      width: 100%;
+      overflow-x: auto;
+      padding-bottom: 1rem;
+    }
+
     .grid {
       display: grid;
       gap: 10px;
@@ -80,11 +88,13 @@
       width: 100%;
       max-width: 100%;
       padding: 0 1rem;
+      grid-auto-rows: var(--card-size);
+      overflow-y: auto;
     }
 
     .card {
-      width: var(--card-size, 80px);
-      height: var(--card-size, 80px);
+      width: var(--card-size);
+      height: var(--card-size);
       perspective: 600px;
     }
 
@@ -149,6 +159,22 @@
     @keyframes fadeOut {
       0% { opacity: 1; }
       100% { opacity: 0; visibility: hidden; }
+    }
+
+    @media (max-width: 600px) {
+      .controls {
+        flex-direction: column;
+        align-items: stretch;
+        width: 100%;
+      }
+
+      .slider {
+        width: 100%;
+      }
+
+      .grid {
+        max-height: 60vh;
+      }
     }
   </style>
 </head>
@@ -249,23 +275,25 @@
             <button onClick={() => setStartTrigger((x) => x + 1)}>Start</button>
           </div>
 
-          <Game
-            difficulty={difficulty}
-            emojiMode={emojiMode}
-            previewTime={previewTime}
-            startTrigger={startTrigger}
-            onWin={() => {
-              setShowWinAnim(true);
-              confetti({ particleCount: 200, spread: 90, origin: { y: 0.6 } });
-              setTimeout(() => {
-                const newScore = score + 1;
-                setScore(newScore);
-                localStorage.setItem("score", newScore);
-                document.getElementById("score").textContent = newScore;
-                setShowWinAnim(false);
-              }, 2500);
-            }}
-          />
+          <div className="game-container">
+            <Game
+              difficulty={difficulty}
+              emojiMode={emojiMode}
+              previewTime={previewTime}
+              startTrigger={startTrigger}
+              onWin={() => {
+                setShowWinAnim(true);
+                confetti({ particleCount: 200, spread: 90, origin: { y: 0.6 } });
+                setTimeout(() => {
+                  const newScore = score + 1;
+                  setScore(newScore);
+                  localStorage.setItem("score", newScore);
+                  document.getElementById("score").textContent = newScore;
+                  setShowWinAnim(false);
+                }, 2500);
+              }}
+            />
+          </div>
 
           {showWinAnim && (
             <div className="win-overlay">
@@ -289,7 +317,16 @@
 
       useEffect(() => {
         const total = rows * cols;
-        const pool = emojiMode ? EMOJIS.slice(0, total / 2) : Array.from({ length: total / 2 }, (_, i) => i + 1);
+        let pairCount = total / 2;
+
+        let pool = emojiMode
+          ? EMOJIS.slice(0, pairCount)
+          : Array.from({ length: pairCount }, (_, i) => i + 1);
+
+        while (pool.length < pairCount) {
+          pool.push(pool.length + 1);
+        }
+
         const full = shuffle([...pool, ...pool]).map((val, i) => ({ id: i, value: val }));
         setCards(full);
         setFlipped(full.map((_, i) => i));
@@ -354,10 +391,7 @@
       };
 
       return (
-        <div
-          className="grid"
-          style={{ gridTemplateColumns: `repeat(${cols}, var(--card-size, 80px))` }}
-        >
+        <div className="grid" style={{ gridTemplateColumns: `repeat(${cols}, var(--card-size))` }}>
           {cards.map((card, i) => {
             const isFlipped = flipped.includes(i) || matched.includes(i);
             return (
@@ -377,3 +411,4 @@
   </script>
 </body>
 </html>
+
