@@ -123,14 +123,6 @@
       width: 150px;
     }
 
-    .toggle {
-      background: transparent;
-      border: 1px solid var(--text);
-      border-radius: 6px;
-      padding: 0.5rem;
-      cursor: pointer;
-    }
-
     .timer {
       font-weight: bold;
       font-size: 1.2rem;
@@ -182,6 +174,7 @@
       const [theme, setTheme] = useState("dark");
       const [previewTime, setPreviewTime] = useState(1000);
       const [startTrigger, setStartTrigger] = useState(0);
+      const [score, setScore] = useState(() => Number(localStorage.getItem("score") || 0));
 
       useEffect(() => {
         document.body.classList.toggle("light", theme === "light");
@@ -222,12 +215,17 @@
             emojiMode={emojiMode}
             previewTime={previewTime}
             startTrigger={startTrigger}
+            onWin={() => {
+              const newScore = score + 1;
+              setScore(newScore);
+              localStorage.setItem("score", newScore);
+            }}
           />
         </>
       );
     }
 
-    function Game({ difficulty, emojiMode, previewTime, startTrigger }) {
+    function Game({ difficulty, emojiMode, previewTime, startTrigger, onWin }) {
       const [cards, setCards] = useState([]);
       const [flipped, setFlipped] = useState([]);
       const [matched, setMatched] = useState([]);
@@ -273,14 +271,12 @@
       }, [time]);
 
       useEffect(() => {
-        if (matched.length === cards.length && !won) {
+        if (matched.length === cards.length && !won && cards.length > 0) {
           setWon(true);
           setTimerRunning(false);
-          const score = Number(localStorage.getItem("score") || 0) + 1;
-          localStorage.setItem("score", score);
-          document.getElementById("score").textContent = score;
+          onWin();
         }
-      }, [matched]);
+      }, [matched, cards]);
 
       useEffect(() => {
         if (flipped.length === 2) {
@@ -311,7 +307,7 @@
           {cards.map((card, i) => {
             const isFlipped = flipped.includes(i) || matched.includes(i);
             return (
-              <div className="card" key={card.id} onClick={() => handleClick(i)}>
+              <div className="card" key={i} onClick={() => handleClick(i)}>
                 <div className={`inner ${isFlipped ? "flipped" : ""}`}>
                   <div className="front"></div>
                   <div className="back">{card.value}</div>
