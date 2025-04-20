@@ -90,6 +90,10 @@
       max-width: 100%;
     }
 
+    .grid-large .card {
+      max-width: 110px !important;
+    }
+
     .card {
       width: 100%;
       aspect-ratio: 1;
@@ -164,6 +168,10 @@
         max-width: 60px;
       }
 
+      .grid-large .card {
+        max-width: 70px !important;
+      }
+
       .front, .back {
         font-size: 1.2rem;
       }
@@ -218,6 +226,7 @@
       const [startTrigger, setStartTrigger] = useState(0);
       const [score, setScore] = useState(() => Number(localStorage.getItem("score") || 0));
       const [showWinAnim, setShowWinAnim] = useState(false);
+      const [largeCards, setLargeCards] = useState(false);
 
       useEffect(() => {
         document.body.classList.toggle("light", theme === "light");
@@ -231,10 +240,9 @@
                 {level.charAt(0).toUpperCase() + level.slice(1)}
               </button>
             ))}
-            <button onClick={() => setTheme((prev) => (prev === "dark" ? "light" : "dark"))}>
-              🌓 Theme
-            </button>
+            <button onClick={() => setTheme((prev) => (prev === "dark" ? "light" : "dark"))}>🌓 Theme</button>
             <button onClick={() => setEmojiMode((prev) => !prev)}>😺 Emoji</button>
+            <button onClick={() => setLargeCards(prev => !prev)}>🔍 Toggle Size</button>
           </div>
 
           <div className="controls">
@@ -258,6 +266,7 @@
             emojiMode={emojiMode}
             previewTime={previewTime}
             startTrigger={startTrigger}
+            largeCards={largeCards}
             onWin={() => {
               setShowWinAnim(true);
               confetti({ particleCount: 200, spread: 90, origin: { y: 0.6 } });
@@ -280,7 +289,7 @@
       );
     }
 
-    function Game({ difficulty, emojiMode, previewTime, startTrigger, onWin }) {
+    function Game({ difficulty, emojiMode, previewTime, startTrigger, largeCards, onWin }) {
       const [cards, setCards] = useState([]);
       const [flipped, setFlipped] = useState([]);
       const [matched, setMatched] = useState([]);
@@ -359,7 +368,7 @@
 
       return (
         <div
-          className={`grid ${difficulty === 'hard' ? 'grid-responsive' : 'grid-fixed'}`}
+          className={`grid ${difficulty === 'hard' ? 'grid-responsive' : 'grid-fixed'} ${largeCards ? 'grid-large' : ''}`}
           style={{ gridTemplateColumns: `repeat(${cols}, ${difficulty === 'hard' ? '1fr' : '80px'})` }}
         >
           {cards.map((card, i) => {
