@@ -82,10 +82,17 @@
       padding: 0 1rem;
     }
 
+    .grid-fixed .card {
+      max-width: 80px;
+    }
+
+    .grid-responsive .card {
+      max-width: 100%;
+    }
+
     .card {
       width: 100%;
       aspect-ratio: 1;
-      max-width: 80px;
       perspective: 600px;
     }
 
@@ -153,8 +160,8 @@
     }
 
     @media (max-width: 600px) {
-      .card {
-        max-width: 50px;
+      .grid-fixed .card {
+        max-width: 60px;
       }
 
       .front, .back {
@@ -173,7 +180,6 @@
 
   <div id="app"></div>
 
-  <!-- Confetti -->
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
   <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
@@ -352,7 +358,10 @@
       };
 
       return (
-        <div className="grid" style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}>
+        <div
+          className={`grid ${difficulty === 'hard' ? 'grid-responsive' : 'grid-fixed'}`}
+          style={{ gridTemplateColumns: `repeat(${cols}, ${difficulty === 'hard' ? '1fr' : '80px'})` }}
+        >
           {cards.map((card, i) => {
             const isFlipped = flipped.includes(i) || matched.includes(i);
             return (
