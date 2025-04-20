@@ -93,7 +93,7 @@
       transform-style: preserve-3d;
     }
 
-    .flipped .inner {
+    .inner.flipped {
       transform: rotateY(180deg);
     }
 
@@ -241,7 +241,7 @@
         const pool = emojiMode ? EMOJIS.slice(0, total / 2) : Array.from({ length: total / 2 }, (_, i) => i + 1);
         const full = shuffle([...pool, ...pool]).map((val, i) => ({ id: i, value: val }));
         setCards(full);
-        setFlipped(full.map((_, i) => i)); // show preview
+        setFlipped(full.map((_, i) => i));
         setMatched([]);
         setLock(true);
         setWon(false);
@@ -250,7 +250,7 @@
 
         const timeout = setTimeout(() => {
           setFlipped([]);
-          setLock(false); // 💡 allow clicks now!
+          setLock(false);
           setTimerRunning(true);
         }, previewTime);
 
@@ -323,5 +323,3 @@
   </script>
 </body>
 </html>
-
-
