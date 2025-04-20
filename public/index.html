@@ -273,7 +273,7 @@
       }, [time]);
 
       useEffect(() => {
-        if (matched.length === cards.length / 2 && !won) {
+        if (matched.length === cards.length && !won) {
           setWon(true);
           setTimerRunning(false);
           const score = Number(localStorage.getItem("score") || 0) + 1;
@@ -287,7 +287,7 @@
           setLock(true);
           const [a, b] = flipped;
           if (cards[a].value === cards[b].value) {
-            setMatched((prev) => [...prev, cards[a].value]);
+            setMatched((prev) => [...prev, a, b]);
             setTimeout(() => {
               setFlipped([]);
               setLock(false);
@@ -302,14 +302,14 @@
       }, [flipped]);
 
       const handleClick = (i) => {
-        if (lock || flipped.includes(i)) return;
+        if (lock || flipped.includes(i) || matched.includes(i)) return;
         setFlipped((prev) => [...prev, i]);
       };
 
       return (
         <div className="grid" style={{ gridTemplateColumns: `repeat(${cols}, 80px)` }}>
           {cards.map((card, i) => {
-            const isFlipped = flipped.includes(i) || matched.includes(card.value);
+            const isFlipped = flipped.includes(i) || matched.includes(i);
             return (
               <div className="card" key={card.id} onClick={() => handleClick(i)}>
                 <div className={`inner ${isFlipped ? "flipped" : ""}`}>
