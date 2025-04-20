@@ -56,6 +56,7 @@
       display: flex;
       gap: 1rem;
       margin: 1rem 0;
+      flex-wrap: wrap;
     }
 
     .buttons button, .controls button {
@@ -145,17 +146,17 @@
   <h1>Mylz's Memory Game</h1>
 
   <div class="buttons">
-    <button id="easy">Easy</button>
-    <button id="medium">Medium</button>
-    <button id="hard">Hard</button>
-    <button id="toggle-theme" class="toggle">🌓 Theme</button>
-    <button id="emoji-mode" class="toggle">😺 Emoji</button>
+    <button data-diff="easy">Easy</button>
+    <button data-diff="medium">Medium</button>
+    <button data-diff="hard">Hard</button>
+    <button id="themeToggle" class="toggle">🌓 Theme</button>
+    <button id="emojiToggle" class="toggle">😺 Emoji</button>
   </div>
 
   <div class="controls">
-    <label for="previewTime">Flip Duration:</label>
-    <input id="previewTime" class="slider" type="range" min="500" max="5000" step="100" value="1000" />
-    <span id="previewValue">1000ms</span>
+    <label for="preview">Flip Duration:</label>
+    <input type="range" id="preview" class="slider" min="500" max="5000" step="100" value="1000" />
+    <span id="previewVal">1000ms</span>
     <button id="start">Start</button>
   </div>
 
@@ -166,89 +167,128 @@
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
   <script type="text/babel">
-    const difficulties = {
+    const { useState, useEffect } = React;
+
+    const DIFFICULTIES = {
       easy: [3, 4],
       medium: [4, 4],
-      hard: [6, 6],
+      hard: [6, 6]
     };
 
-    const emojiList = ["🐶", "🐱", "🐭", "🦊", "🐻", "🐼", "🐨", "🐯", "🦁", "🐸", "🐙", "🐷"];
+    const EMOJIS = ["🐶", "🐱", "🐭", "🦊", "🐻", "🐼", "🐨", "🐯", "🦁", "🐸", "🐙", "🐷"];
 
-    let isEmojiMode = false;
-    let theme = "dark";
-    let timerInterval;
+    const App = () => {
+      const [difficulty, setDifficulty] = useState("easy");
+      const [emojiMode, setEmojiMode] = useState(false);
+      const [theme, setTheme] = useState("dark");
+      const [previewTime, setPreviewTime] = useState(1000);
+      const [gameKey, setGameKey] = useState(0);
 
-    function generateValues(totalPairs) {
-      const pool = isEmojiMode ? emojiList.slice(0, totalPairs) : Array.from({ length: totalPairs }, (_, i) => i + 1);
-      const fullSet = shuffle([...pool, ...pool]);
-      return fullSet.map((value, i) => ({ id: i, value }));
-    }
+      useEffect(() => {
+        document.body.classList.toggle("light", theme === "light");
+      }, [theme]);
 
-    function shuffle(array) {
-      let i = array.length;
-      while (i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
-      }
-      return array;
-    }
+      return (
+        <>
+          <Game
+            key={gameKey}
+            difficulty={difficulty}
+            emojiMode={emojiMode}
+            previewTime={previewTime}
+            theme={theme}
+          />
+          <script dangerouslySetInnerHTML={{
+            __html: `
+              document.querySelectorAll('[data-diff]').forEach(btn => {
+                btn.onclick = () => {
+                  window.setDifficulty(btn.dataset.diff);
+                };
+              });
 
-    function formatTime(seconds) {
-      const m = String(Math.floor(seconds / 60)).padStart(2, '0');
-      const s = String(seconds % 60).padStart(2, '0');
-      return `${m}:${s}`;
-    }
+              document.getElementById("emojiToggle").onclick = () => {
+                window.setEmoji();
+              };
 
-    function Game({ rows, cols, previewTime }) {
-      const total = rows * cols;
-      const [cards, setCards] = React.useState([]);
-      const [flipped, setFlipped] = React.useState([]);
-      const [matched, setMatched] = React.useState([]);
-      const [lockBoard, setLockBoard] = React.useState(true);
-      const [time, setTime] = React.useState(0);
+              document.getElementById("themeToggle").onclick = () => {
+                window.setTheme();
+              };
 
-      React.useEffect(() => {
-        const values = generateValues(total / 2);
-        setCards(values);
-        setFlipped(values.map((_, i) => i));
+              document.getElementById("preview").oninput = (e) => {
+                document.getElementById("previewVal").textContent = e.target.value + "ms";
+                window.setPreview(+e.target.value);
+              };
+
+              document.getElementById("start").onclick = () => {
+                window.replay();
+              };
+            `
+          }} />
+          <script dangerouslySetInnerHTML={{
+            __html: `
+              window.setDifficulty = (d) => {
+                window.__app.setDiff(d);
+              };
+              window.setEmoji = () => {
+                window.__app.setEmoji();
+              };
+              window.setTheme = () => {
+                window.__app.setTheme();
+              };
+              window.setPreview = (ms) => {
+                window.__app.setPreview(ms);
+              };
+              window.replay = () => {
+                window.__app.replay();
+              };
+            `
+          }} />
+        </>
+      );
+    };
+
+    const Game = ({ difficulty, emojiMode, previewTime }) => {
+      const [cards, setCards] = useState([]);
+      const [flipped, setFlipped] = useState([]);
+      const [matched, setMatched] = useState([]);
+      const [startTime, setStartTime] = useState(Date.now());
+      const [lock, setLock] = useState(true);
+
+      useEffect(() => {
+        const [rows, cols] = DIFFICULTIES[difficulty];
+        const total = rows * cols;
+        const pool = emojiMode ? EMOJIS.slice(0, total / 2) : Array.from({ length: total / 2 }, (_, i) => i + 1);
+        const deck = shuffle([...pool, ...pool]).map((v, i) => ({ id: i, value: v }));
+        setCards(deck);
         setMatched([]);
-        setLockBoard(true);
-        let timePassed = 0;
-        document.getElementById("timer").textContent = "Time: 00:00";
+        setFlipped(deck.map((_, i) => i));
+        setStartTime(Date.now());
+        setLock(true);
+        setTimeout(() => setFlipped([]) || setLock(false), previewTime);
+      }, [difficulty, emojiMode, previewTime]);
 
-        timerInterval = setInterval(() => {
-          timePassed++;
-          document.getElementById("timer").textContent = "Time: " + formatTime(timePassed);
-        }, 1000);
-
-        setTimeout(() => {
-          setFlipped([]);
-          setLockBoard(false);
-        }, previewTime);
-      }, [rows, cols, previewTime]);
-
-      React.useEffect(() => {
+      useEffect(() => {
         if (flipped.length === 2) {
-          setLockBoard(true);
+          setLock(true);
           const [a, b] = flipped;
           if (cards[a].value === cards[b].value) {
             setMatched((prev) => [...prev, cards[a].value]);
-            setTimeout(() => {
-              setFlipped([]);
-              setLockBoard(false);
-            }, 400);
+            setTimeout(() => setFlipped([]) || setLock(false), 500);
           } else {
-            setTimeout(() => {
-              setFlipped([]);
-              setLockBoard(false);
-            }, 800);
+            setTimeout(() => setFlipped([]) || setLock(false), 800);
           }
         }
       }, [flipped]);
 
-      React.useEffect(() => {
-        if (matched.length === total / 2) {
-          clearInterval(timerInterval);
+      useEffect(() => {
+        const int = setInterval(() => {
+          const diff = Math.floor((Date.now() - startTime) / 1000);
+          document.getElementById("timer").textContent = "Time: " + formatTime(diff);
+        }, 1000);
+        return () => clearInterval(int);
+      }, [startTime]);
+
+      useEffect(() => {
+        if (matched.length && matched.length === cards.length / 2) {
           const score = Number(localStorage.getItem("score") || 0) + 1;
           localStorage.setItem("score", score);
           document.getElementById("score").textContent = score;
@@ -256,9 +296,11 @@
       }, [matched]);
 
       const handleClick = (i) => {
-        if (lockBoard || flipped.includes(i) || matched.includes(cards[i].value)) return;
-        setFlipped((prev) => [...prev, i]);
+        if (lock || flipped.includes(i)) return;
+        setFlipped([...flipped, i]);
       };
+
+      const [rows, cols] = DIFFICULTIES[difficulty];
 
       return (
         <div className="grid" style={{ gridTemplateColumns: `repeat(${cols}, 80px)` }}>
@@ -275,47 +317,64 @@
           })}
         </div>
       );
+    };
+
+    function shuffle(arr) {
+      let i = arr.length;
+      while (i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
     }
 
-    let currentDifficulty = "easy";
+    function formatTime(s) {
+      const m = String(Math.floor(s / 60)).padStart(2, "0");
+      const sec = String(s % 60).padStart(2, "0");
+      return `${m}:${sec}`;
+    }
 
-    function renderGame() {
-      const [rows, cols] = difficulties[currentDifficulty];
-      const previewTime = parseInt(document.getElementById("previewTime").value);
-      ReactDOM.createRoot(document.getElementById("root")).render(
-        <Game rows={rows} cols={cols} previewTime={previewTime} />
+    const root = ReactDOM.createRoot(document.getElementById("root"));
+    const app = {
+      setDiff: (d) => {
+        state.difficulty = d;
+        refresh();
+      },
+      setEmoji: () => {
+        state.emojiMode = !state.emojiMode;
+        refresh();
+      },
+      setTheme: () => {
+        state.theme = state.theme === "dark" ? "light" : "dark";
+        refresh();
+      },
+      setPreview: (ms) => {
+        state.previewTime = ms;
+        refresh();
+      },
+      replay: () => refresh()
+    };
+
+    const state = {
+      difficulty: "easy",
+      emojiMode: false,
+      theme: "dark",
+      previewTime: 1000
+    };
+
+    function refresh() {
+      root.render(
+        <App
+          difficulty={state.difficulty}
+          emojiMode={state.emojiMode}
+          previewTime={state.previewTime}
+          theme={state.theme}
+        />
       );
     }
 
-    function setupControls() {
-      document.getElementById("easy").onclick = () => currentDifficulty = "easy";
-      document.getElementById("medium").onclick = () => currentDifficulty = "medium";
-      document.getElementById("hard").onclick = () => currentDifficulty = "hard";
-      document.getElementById("start").onclick = () => renderGame();
-
-      document.getElementById("previewTime").oninput = (e) => {
-        document.getElementById("previewValue").textContent = e.target.value + "ms";
-      };
-
-      document.getElementById("toggle-theme").onclick = () => {
-        theme = theme === "dark" ? "light" : "dark";
-        document.body.classList.toggle("light");
-      };
-
-      document.getElementById("emoji-mode").onclick = () => {
-        isEmojiMode = !isEmojiMode;
-      };
-    }
-
-    window.onload = () => {
-      setupControls();
-      localStorage.setItem("score", 0);
-    };
-
-    window.addEventListener("beforeunload", () => {
-      localStorage.removeItem("score");
-      clearInterval(timerInterval);
-    });
+    window.__app = app;
+    refresh();
   </script>
 </body>
 </html>
