@@ -1,124 +1,181 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Mylz's Memory Game</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <style>
-      body {
-        font-family: sans-serif;
-        text-align: center;
-        background: #f9f9f9;
-        padding: 1rem;
-      }
-      .grid {
-        display: grid;
-        gap: 10px;
-        justify-content: center;
-        margin-top: 1rem;
-      }
-      .card {
-        background: #ccc;
-        border-radius: 8px;
-        cursor: pointer;
-        overflow: hidden;
-      }
-      .card img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-      }
-      .buttons button {
-        margin: 0.3rem;
-        padding: 0.5rem 1rem;
-        border-radius: 6px;
-        border: none;
-        cursor: pointer;
-      }
-    </style>
-  </head>
-  <body>
-    <h1>Mylz's Memory Game</h1>
-    <div class="buttons">
-      <button onclick="setDifficulty(2)">Easy</button>
-      <button onclick="setDifficulty(4)">Medium</button>
-      <button onclick="setDifficulty(6)">Hard</button>
-    </div>
-    <div id="root"></div>
+<head>
+  <meta charset="UTF-8" />
+  <title>Mylz's Memory Game</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f0f4f8;
+      margin: 0;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
 
-    <!-- REACT + BABEL -->
-    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    h1 {
+      font-size: 2.2rem;
+      margin-bottom: 1rem;
+    }
 
-    <!-- GAME SCRIPT -->
-    <script type="text/babel">
-      const imagesPool = [...Array(18)].map((_, i) => \`https://picsum.photos/id/\${1011 + i}/100\`);
+    .buttons {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
 
-      function shuffle(array) {
-        let currentIndex = array.length;
-        while (currentIndex !== 0) {
-          const randomIndex = Math.floor(Math.random() * currentIndex);
-          currentIndex--;
-          [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+    .buttons button {
+      background: #e0e0e0;
+      padding: 0.6rem 1.2rem;
+      border-radius: 8px;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .buttons button:hover {
+      background: #ccc;
+    }
+
+    .grid {
+      display: grid;
+      gap: 10px;
+      justify-content: center;
+    }
+
+    .card {
+      background: #ddd;
+      border-radius: 10px;
+      cursor: pointer;
+      overflow: hidden;
+    }
+
+    .card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .win-message {
+      font-weight: bold;
+      margin-top: 1.5rem;
+      color: #388e3c;
+    }
+
+    .play-again {
+      margin-top: 0.5rem;
+      padding: 0.5rem 1rem;
+      border: none;
+      background: #4caf50;
+      color: white;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>Mylz's Memory Game</h1>
+  <div class="buttons">
+    <button onclick="setGameSize(2)">Easy</button>
+    <button onclick="setGameSize(4)">Medium</button>
+    <button onclick="setGameSize(6)">Hard</button>
+  </div>
+  <div id="root"></div>
+
+  <!-- React + Babel -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Game Logic -->
+  <script type="text/babel">
+    const imagesPool = [...Array(18)].map((_, i) => \`https://picsum.photos/id/\${1011 + i}/100\`);
+
+    function shuffle(array) {
+      let currentIndex = array.length;
+      while (currentIndex !== 0) {
+        const randomIndex = Math.floor(Math.random() * currentIndex);
+        currentIndex--;
+        [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+      }
+      return array;
+    }
+
+    function Game({ size }) {
+      const [cards, setCards] = React.useState([]);
+      const [flipped, setFlipped] = React.useState([]);
+      const [matched, setMatched] = React.useState([]);
+
+      const total = size * size;
+
+      React.useEffect(() => {
+        const selected = shuffle(imagesPool).slice(0, total / 2);
+        const deck = shuffle([...selected, ...selected]).map((src, i) => ({ src, id: i }));
+        setCards(deck);
+        setFlipped([]);
+        setMatched([]);
+      }, [size]);
+
+      React.useEffect(() => {
+        if (flipped.length === 2) {
+          const [a, b] = flipped;
+          if (cards[a].src === cards[b].src) {
+            setMatched((prev) => [...prev, cards[a].src]);
+          }
+          setTimeout(() => setFlipped([]), 700);
         }
-        return array;
-      }
+      }, [flipped]);
 
-      function App() {
-        const [gridSize, setGridSize] = React.useState(2);
-        const [cards, setCards] = React.useState([]);
-        const [flipped, setFlipped] = React.useState([]);
-        const [matched, setMatched] = React.useState([]);
+      const handleClick = (i) => {
+        if (!flipped.includes(i) && flipped.length < 2 && !matched.includes(cards[i].src)) {
+          setFlipped([...flipped, i]);
+        }
+      };
 
-        React.useEffect(() => {
-          const total = gridSize * gridSize;
-          const selected = shuffle(imagesPool).slice(0, total / 2);
-          const deck = shuffle([...selected, ...selected]).map((src, i) => ({ id: i, src }));
-          setCards(deck);
-          setFlipped([]);
-          setMatched([]);
-        }, [gridSize]);
+      const allMatched = matched.length === total / 2;
 
-        React.useEffect(() => {
-          if (flipped.length === 2) {
-            const [a, b] = flipped;
-            if (cards[a].src === cards[b].src) {
-              setMatched((prev) => [...prev, cards[a].src]);
-            }
-            setTimeout(() => setFlipped([]), 800);
-          }
-        }, [flipped]);
-
-        const handleClick = (i) => {
-          if (!flipped.includes(i) && flipped.length < 2 && !matched.includes(cards[i].src)) {
-            setFlipped([...flipped, i]);
-          }
-        };
-
-        return (
-          <div className="grid" style={{ gridTemplateColumns: \`repeat(\${gridSize}, 100px)\` }}>
+      return (
+        <div>
+          <div className="grid" style={{ gridTemplateColumns: \`repeat(\${size}, 100px)\` }}>
             {cards.map((card, i) => {
-              const isShown = flipped.includes(i) || matched.includes(card.src);
+              const isFlipped = flipped.includes(i) || matched.includes(card.src);
               return (
                 <div key={card.id} className="card" style={{ width: 100, height: 100 }} onClick={() => handleClick(i)}>
-                  {isShown ? <img src={card.src} alt="card" /> : <div style={{ height: \"100%\" }} />}
+                  {isFlipped ? (
+                    <img src={card.src} alt="card" />
+                  ) : (
+                    <div style={{ height: \"100%\" }} />
+                  )}
                 </div>
               );
             })}
           </div>
-        );
-      }
 
-      function setDifficulty(size) {
-        rootRender(<App key={size} />);
-      }
+          {allMatched && (
+            <div className="win-message">
+              🎉 You matched them all!
+              <br />
+              <button className="play-again" onClick={() => renderGame(size)}>Play Again</button>
+            </div>
+          )}
+        </div>
+      );
+    }
 
-      function rootRender(component) {
-        ReactDOM.createRoot(document.getElementById(\"root\")).render(component);
-      }
+    function renderGame(size) {
+      ReactDOM.createRoot(document.getElementById(\"root\")).render(<Game size={size} />);
+    }
 
-      rootRender(<App />);
-    </script>
-  </body>
+    function setGameSize(size) {
+      renderGame(size);
+    }
+
+    // Initial game render
+    renderGame(2);
+  </script>
+</body>
 </html>
