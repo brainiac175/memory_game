@@ -5,9 +5,7 @@
   <title>Mylz's Memory Game</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
@@ -88,15 +86,15 @@
       background: #999;
     }
 
+    .back {
+      transform: rotateY(180deg);
+    }
+
     .back img {
       width: 100%;
       height: 100%;
       object-fit: cover;
       border-radius: 10px;
-    }
-
-    .back {
-      transform: rotateY(180deg);
     }
 
     .win-message {
@@ -137,7 +135,17 @@
 
   <!-- Game Script -->
   <script type="text/babel">
-    const imagesPool = [...Array(18)].map((_, i) => \`https://picsum.photos/id/\${1011 + i}/100\`);
+    const imagesPool = [
+      "https://placekitten.com/100/100",
+      "https://placebear.com/100/100",
+      "https://placekitten.com/101/100",
+      "https://placebear.com/101/100",
+      "https://placekitten.com/102/100",
+      "https://placebear.com/102/100",
+      "https://placekitten.com/103/100",
+      "https://placebear.com/103/100",
+      "https://placekitten.com/104/100",
+    ];
 
     function shuffle(array) {
       let currentIndex = array.length;
@@ -240,7 +248,7 @@
     });
 
     initScore();
-    renderGame(2); // Load game immediately
+    renderGame(2); // auto-load game
   </script>
 </body>
 </html>
